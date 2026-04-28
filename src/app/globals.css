@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #7c3aed;
+  --primary-dark: #5b21b6;
+  --accent: #a78bfa;
+  --bg-dark: #0f0f1a;
+  --bg-card: #1a1a2e;
+  --bg-card-hover: #252540;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 3D Logo Animation */
+@keyframes logo3d {
+  0% { transform: perspective(500px) rotateY(0deg); }
+  25% { transform: perspective(500px) rotateY(15deg); }
+  50% { transform: perspective(500px) rotateY(0deg); }
+  75% { transform: perspective(500px) rotateY(-15deg); }
+  100% { transform: perspective(500px) rotateY(0deg); }
+}
+
+.logo-3d {
+  animation: logo3d 4s ease-in-out infinite;
+  text-shadow: 
+    0 1px 0 #6d28d9,
+    0 2px 0 #5b21b6,
+    0 3px 0 #4c1d95,
+    0 4px 0 #3b0f7a,
+    0 5px 10px rgba(0,0,0,0.4),
+    0 0 20px rgba(124, 58, 237, 0.3);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+/* Glow effects */
+.glow-purple {
+  box-shadow: 0 0 15px rgba(124, 58, 237, 0.3), 0 0 30px rgba(124, 58, 237, 0.1);
+}
+
+.glow-purple-hover:hover {
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.5), 0 0 40px rgba(124, 58, 237, 0.2);
+}
