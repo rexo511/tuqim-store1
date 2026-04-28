@@ -48,6 +48,7 @@ export default function CheckoutPage() {
           productName: item.product.name,
           price: item.product.price,
           quantity: item.quantity,
+          imageUrl: item.product.imageUrl || '',
         })),
         total,
         status: 'new',

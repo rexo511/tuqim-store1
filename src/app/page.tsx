@@ -60,9 +60,15 @@ export default function HomePage() {
               key={product.id}
               className="bg-[#1a1a2e] rounded-xl border border-purple-900/30 p-6 hover:border-purple-600/50 transition-all glow-purple-hover"
             >
-              <div className="flex items-center justify-center w-16 h-16 bg-purple-900/30 rounded-xl mb-4 mx-auto">
-                <FiPackage className="w-8 h-8 text-purple-400" />
-              </div>
+              {product.imageUrl ? (
+                <div className="w-full h-40 rounded-xl mb-4 overflow-hidden bg-purple-900/20">
+                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center w-full h-40 bg-purple-900/30 rounded-xl mb-4">
+                  <FiPackage className="w-12 h-12 text-purple-400" />
+                </div>
+              )}
               <h3 className="text-lg font-bold text-center mb-2">{product.name}</h3>
               <p className="text-gray-400 text-sm text-center mb-4 line-clamp-2">
                 {product.description}

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import { Product, Order } from '@/types';
 import { FiPackage, FiDollarSign, FiShoppingBag, FiClock, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX, FiLoader } from 'react-icons/fi';
@@ -22,6 +23,9 @@ export default function AdminPage() {
   const [productName, setProductName] = useState('');
   const [productPrice, setProductPrice] = useState('');
   const [productDesc, setProductDesc] = useState('');
+  const [productImage, setProductImage] = useState<File | null>(null);
+  const [productImageUrl, setProductImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -57,17 +61,29 @@ export default function AdminPage() {
     if (!productName.trim() || !productPrice.trim()) return;
 
     try {
+      let imageUrl = productImageUrl;
+
+      if (productImage) {
+        setUploading(true);
+        const imageRef = ref(storage, `products/${Date.now()}_${productImage.name}`);
+        await uploadBytes(imageRef, productImage);
+        imageUrl = await getDownloadURL(imageRef);
+        setUploading(false);
+      }
+
       if (editingProduct) {
         await updateDoc(doc(db, 'products', editingProduct.id), {
           name: productName.trim(),
           price: parseFloat(productPrice),
           description: productDesc.trim(),
+          imageUrl,
         });
       } else {
         await addDoc(collection(db, 'products'), {
           name: productName.trim(),
           price: parseFloat(productPrice),
           description: productDesc.trim(),
+          imageUrl,
           createdAt: Date.now(),
         });
       }
@@ -75,6 +91,7 @@ export default function AdminPage() {
       fetchData();
     } catch (error) {
       console.error('Error saving product:', error);
+      setUploading(false);
     }
   };
 
@@ -103,6 +120,9 @@ export default function AdminPage() {
     setProductName('');
     setProductPrice('');
     setProductDesc('');
+    setProductImage(null);
+    setProductImageUrl('');
+    setUploading(false);
   };
 
   const startEditProduct = (product: Product) => {
@@ -110,6 +130,8 @@ export default function AdminPage() {
     setProductName(product.name);
     setProductPrice(product.price.toString());
     setProductDesc(product.description);
+    setProductImageUrl(product.imageUrl || '');
+    setProductImage(null);
     setShowProductForm(true);
   };
 
@@ -268,12 +290,34 @@ export default function AdminPage() {
                       placeholder="وصف المنتج"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">صورة المنتج</label>
+                    {productImageUrl && !productImage && (
+                      <div className="mb-2 w-full h-32 rounded-lg overflow-hidden bg-purple-900/20">
+                        <img src={productImageUrl} alt="preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => {
+                        const file = e.target.files?.[0] || null;
+                        setProductImage(file);
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => setProductImageUrl(ev.target?.result as string);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-purple-600 file:text-white hover:file:bg-purple-700 file:cursor-pointer"
+                    />
+                  </div>
                   <div className="flex gap-3">
                     <button
                       onClick={handleSaveProduct}
                       className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors text-white"
                     >
-                      {editingProduct ? 'حفظ التعديلات' : 'إضافة المنتج'}
+                      {uploading ? 'جاري رفع الصورة...' : editingProduct ? 'حفظ التعديلات' : 'إضافة المنتج'}
                     </button>
                     <button
                       onClick={resetProductForm}
@@ -294,10 +338,17 @@ export default function AdminPage() {
                 key={product.id}
                 className="bg-[#1a1a2e] rounded-xl border border-purple-900/30 p-4 flex items-center justify-between"
               >
-                <div>
-                  <h3 className="font-bold text-lg">{product.name}</h3>
-                  <p className="text-sm text-gray-400">{product.description}</p>
-                  <p className="text-purple-400 font-bold mt-1">{product.price} ر.س</p>
+                <div className="flex items-center gap-4">
+                  {product.imageUrl && (
+                    <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-bold text-lg">{product.name}</h3>
+                    <p className="text-sm text-gray-400">{product.description}</p>
+                    <p className="text-purple-400 font-bold mt-1">{product.price} ر.س</p>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button

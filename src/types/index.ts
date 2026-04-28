@@ -3,6 +3,7 @@ export interface Product {
   name: string;
   price: number;
   description: string;
+  imageUrl: string;
   createdAt: number;
 }
 
@@ -17,7 +18,7 @@ export interface Order {
   customerName: string;
   customerEmail: string;
   discordUsername: string;
-  items: { productName: string; price: number; quantity: number }[];
+  items: { productName: string; price: number; quantity: number; imageUrl?: string }[];
   total: number;
   status: 'new' | 'processing' | 'completed' | 'cancelled';
   createdAt: number;
