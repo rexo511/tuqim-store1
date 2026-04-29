@@ -3,21 +3,18 @@
 import { useEffect, useState } from 'react';
 
 export default function WelcomeScreen() {
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useState(true);
 
   useEffect(() => {
-    // Check if user has seen welcome screen before
-    const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+    // Show welcome screen on every visit
+    setShow(true);
     
-    if (!hasSeenWelcome) {
-      setShow(true);
-      
-      // Hide after 3 seconds
-      setTimeout(() => {
-        setShow(false);
-        localStorage.setItem('hasSeenWelcome', 'true');
-      }, 3000);
-    }
+    // Hide after 3 seconds
+    const timer = setTimeout(() => {
+      setShow(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   if (!show) return null;
