@@ -4,13 +4,12 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   User,
   onAuthStateChanged,
-  signInWithRedirect,
+  signInWithPopup,
   GoogleAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
   signOut as firebaseSignOut,
-  getRedirectResult,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
@@ -43,28 +42,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // قائمة إيميلات الأدمن
-  const ADMIN_EMAILS = [
-    'admin@tuqim.com',
-    // أضف إيميلات الأدمن هنا
-  ];
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
       if (user) {
-        // تحقق من أن الإيميل موجود في قائمة الأدمن
-        const isAdminUser = ADMIN_EMAILS.includes(user.email || '');
-        setIsAdmin(isAdminUser);
+        // تحقق من أن المستخدم سجل دخول بالإيميل/باسورد (أدمن)
+        const isPasswordProvider = user.providerData.some(p => p.providerId === 'password');
+        setIsAdmin(isPasswordProvider);
       } else {
         setIsAdmin(false);
       }
-    });
-    
-    // Check for redirect result
-    getRedirectResult(auth).catch((error) => {
-      console.error('Redirect result error:', error);
     });
     
     return () => unsubscribe();
@@ -77,8 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         prompt: 'select_account'
       });
       
-      // Use redirect instead of popup (more reliable)
-      await signInWithRedirect(auth, provider);
+      // Use popup (more reliable than redirect)
+      await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error('Google Sign-In Error:', error);
       throw error;
