@@ -33,6 +33,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    // Only run in browser
+    if (typeof window === 'undefined') return;
+    
     const saved = localStorage.getItem('tuqim-cart');
     if (saved) {
       try {
@@ -44,6 +47,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Only run in browser
+    if (typeof window === 'undefined') return;
+    
     localStorage.setItem('tuqim-cart', JSON.stringify(items));
   }, [items]);
 

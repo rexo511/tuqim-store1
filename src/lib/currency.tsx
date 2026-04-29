@@ -16,6 +16,9 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
 
   useEffect(() => {
+    // Only run in browser
+    if (typeof window === 'undefined') return;
+    
     const saved = localStorage.getItem('tuqim-currency') as 'SAR' | 'USD' | null;
     if (saved) {
       setCurrency(saved);
@@ -23,6 +26,9 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Only run in browser
+    if (typeof window === 'undefined') return;
+    
     localStorage.setItem('tuqim-currency', currency);
   }, [currency]);
 

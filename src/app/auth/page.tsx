@@ -21,7 +21,10 @@ export default function AuthPage() {
   useEffect(() => {
     if (user) {
       console.log('✅ User detected, redirecting to home...');
-      router.push('/');
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        router.push('/');
+      }, 100);
     }
   }, [user, router]);
 

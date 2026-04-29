@@ -25,6 +25,9 @@ export default function CheckoutPage() {
 
   // Check for Discord OAuth callback
   useEffect(() => {
+    // Only run in browser
+    if (typeof window === 'undefined') return;
+    
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     
@@ -46,14 +49,19 @@ export default function CheckoutPage() {
       // This would normally be done on the backend
       // For now, we'll just mark as connected and let user enter manually
       setDiscordConnected(true);
-      // Clean URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Clean URL (only in browser)
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
     } catch (error) {
       console.error('Discord OAuth error:', error);
     }
   };
 
   const handleDiscordConnect = () => {
+    // Only run in browser
+    if (typeof window === 'undefined') return;
+    
     // Discord OAuth URL
     const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || 'YOUR_DISCORD_CLIENT_ID';
     const redirectUri = encodeURIComponent(window.location.origin + '/checkout');

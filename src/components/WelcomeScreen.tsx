@@ -4,31 +4,19 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 
 export default function WelcomeScreen() {
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useState(true); // Start with true to show immediately
   const { user } = useAuth();
 
   useEffect(() => {
-    // Show welcome screen on every page load
+    // Show welcome screen and hide after 3 seconds
     setShow(true);
     
-    // Hide after 3 seconds
     const timer = setTimeout(() => {
       setShow(false);
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, []);
-
-  // Also show when user logs in
-  useEffect(() => {
-    if (user) {
-      setShow(true);
-      const timer = setTimeout(() => {
-        setShow(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [user]);
+  }, [user]); // Re-trigger when user changes (login/logout)
 
   if (!show) return null;
 
