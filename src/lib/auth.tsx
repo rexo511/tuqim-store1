@@ -43,13 +43,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // قائمة إيميلات الأدمن
+  const ADMIN_EMAILS = [
+    'admin@tuqim.com',
+    // أضف إيميلات الأدمن هنا
+  ];
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
       if (user) {
-        const isPasswordProvider = user.providerData.some(p => p.providerId === 'password');
-        setIsAdmin(isPasswordProvider);
+        // تحقق من أن الإيميل موجود في قائمة الأدمن
+        const isAdminUser = ADMIN_EMAILS.includes(user.email || '');
+        setIsAdmin(isAdminUser);
       } else {
         setIsAdmin(false);
       }

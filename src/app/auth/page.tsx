@@ -19,7 +19,8 @@ export default function AuthPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user && !loading) {
+    if (user) {
+      console.log('✅ User detected, redirecting to home...');
       router.push('/');
     }
   }, [user, router]);
