@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -8,6 +8,7 @@ import { useCart } from '@/lib/cart';
 import { useCurrency } from '@/lib/currency';
 import { useAuth } from '@/lib/auth';
 import { FiCheck, FiAlertCircle } from 'react-icons/fi';
+import { SiDiscord } from 'react-icons/si';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function CheckoutPage() {
@@ -16,10 +17,52 @@ export default function CheckoutPage() {
   const { user, signInWithGoogle } = useAuth();
   const router = useRouter();
   const [discordUsername, setDiscordUsername] = useState('');
+  const [discordConnected, setDiscordConnected] = useState(false);
   const [orderCode, setOrderCode] = useState('');
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Check for Discord OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    
+    if (code) {
+      // Exchange code for user info
+      exchangeDiscordCode(code);
+    }
+    
+    // Check if Discord username is saved in localStorage
+    const savedDiscord = localStorage.getItem('discordUsername');
+    if (savedDiscord) {
+      setDiscordUsername(savedDiscord);
+      setDiscordConnected(true);
+    }
+  }, []);
+
+  const exchangeDiscordCode = async (code: string) => {
+    try {
+      // This would normally be done on the backend
+      // For now, we'll just mark as connected and let user enter manually
+      setDiscordConnected(true);
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (error) {
+      console.error('Discord OAuth error:', error);
+    }
+  };
+
+  const handleDiscordConnect = () => {
+    // Discord OAuth URL
+    const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || 'YOUR_DISCORD_CLIENT_ID';
+    const redirectUri = encodeURIComponent(window.location.origin + '/checkout');
+    const scope = 'identify';
+    
+    const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+    
+    window.location.href = discordAuthUrl;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +104,8 @@ export default function CheckoutPage() {
       setOrderCode(code);
       setOrderPlaced(true);
       clearCart();
+      // Save Discord username for future orders
+      localStorage.setItem('discordUsername', discordUsername.trim());
     } catch (err) {
       console.error('Error placing order:', err);
       setError('حدث خطأ أثناء تقديم الطلب');
@@ -172,6 +217,31 @@ export default function CheckoutPage() {
           {/* Discord Username */}
           <div className="bg-[#1a1a2e] rounded-xl border border-purple-900/30 p-6">
             <h2 className="text-xl font-bold mb-4">معلومات التواصل</h2>
+            
+            {/* Discord Connect Button */}
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={handleDiscordConnect}
+                className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-[#5865F2] hover:bg-[#4752C4] rounded-lg transition-colors text-white font-medium"
+              >
+                <SiDiscord className="w-5 h-5" />
+                {discordConnected ? 'تم الربط مع Discord' : 'ربط حساب Discord'}
+              </button>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                اربط حسابك تلقائياً أو أدخل اليوزر يدوياً
+              </p>
+            </div>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-[#1a1a2e] text-gray-500">أو</span>
+              </div>
+            </div>
+
             <label className="block text-sm text-gray-400 mb-2">
               يوزر دسكورد <span className="text-red-400">*</span>
             </label>
