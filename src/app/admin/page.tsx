@@ -38,17 +38,17 @@ export default function AdminPage() {
 
   // Fetch products
   useEffect(() => {
-    if (user && isAdmin) {
+    if (user && isAdmin && activeTab === 'products') {
       fetchProducts();
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, activeTab]);
 
   // Fetch orders
   useEffect(() => {
-    if (user && isAdmin) {
+    if (user && isAdmin && (activeTab === 'orders' || activeTab === 'dashboard')) {
       fetchOrders();
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, activeTab]);
 
   const fetchProducts = async () => {
     setLoadingProducts(true);
@@ -296,8 +296,15 @@ export default function AdminPage() {
             </button>
           </div>
 
-          {/* Product Form Modal */}
-          {showProductForm && (
+          {/* Loading State */}
+          {loadingProducts ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+            </div>
+          ) : (
+            <>
+              {/* Product Form Modal */}
+              {showProductForm && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
               <div className="bg-[#1a1a2e] rounded-2xl border border-purple-900/30 p-6 w-full max-w-md mx-4">
                 <h3 className="text-xl font-bold mb-4">
@@ -416,6 +423,8 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
       )}
 
