@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/auth';
 
 export default function WelcomeScreen() {
-  const [show, setShow] = useState(true);
+  const [show, setShow] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Show welcome screen on every visit
+    // Show welcome screen on every page load
     setShow(true);
     
     // Hide after 3 seconds
@@ -16,6 +18,17 @@ export default function WelcomeScreen() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Also show when user logs in
+  useEffect(() => {
+    if (user) {
+      setShow(true);
+      const timer = setTimeout(() => {
+        setShow(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
 
   if (!show) return null;
 
@@ -32,7 +45,7 @@ export default function WelcomeScreen() {
         {/* Welcome Text */}
         <h1 className="text-6xl font-extrabold mb-4 animate-slideUp">
           <span className="bg-gradient-to-r from-purple-400 via-violet-300 to-purple-400 bg-clip-text text-transparent">
-            مرحباً بك
+            {user ? `مرحباً ${user.displayName || 'بك'}` : 'مرحباً بك'}
           </span>
         </h1>
 
