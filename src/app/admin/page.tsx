@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, addDoc, limit } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, deleteDoc, addDoc, onSnapshot } from 'firebase/firestore';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db } from '@/lib/firebase';
@@ -36,47 +36,43 @@ export default function AdminPage() {
     }
   }, [user, isAdmin, authLoading, router]);
 
-  // Fetch products
+  // Fetch products with realtime updates
   useEffect(() => {
-    if (user && isAdmin && activeTab === 'products') {
-      fetchProducts();
-    }
-  }, [user, isAdmin, activeTab]);
-
-  // Fetch orders
-  useEffect(() => {
-    if (user && isAdmin && (activeTab === 'orders' || activeTab === 'dashboard')) {
-      fetchOrders();
-    }
-  }, [user, isAdmin, activeTab]);
-
-  const fetchProducts = async () => {
+    if (!user || !isAdmin) return;
+    
     setLoadingProducts(true);
-    try {
-      const productsQ = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
-      const productsSnap = await getDocs(productsQ);
-      const productsData = productsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+    const productsQ = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+    
+    const unsubscribe = onSnapshot(productsQ, (snapshot) => {
+      const productsData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Product));
       setProducts(productsData);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
       setLoadingProducts(false);
-    }
-  };
+    }, (error) => {
+      console.error('Error fetching products:', error);
+      setLoadingProducts(false);
+    });
 
-  const fetchOrders = async () => {
+    return () => unsubscribe();
+  }, [user, isAdmin]);
+
+  // Fetch orders with realtime updates
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+    
     setLoadingOrders(true);
-    try {
-      const ordersQ = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-      const ordersSnap = await getDocs(ordersQ);
-      const ordersData = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+    const ordersQ = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    
+    const unsubscribe = onSnapshot(ordersQ, (snapshot) => {
+      const ordersData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
       setOrders(ordersData);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-    } finally {
       setLoadingOrders(false);
-    }
-  };
+    }, (error) => {
+      console.error('Error fetching orders:', error);
+      setLoadingOrders(false);
+    });
+
+    return () => unsubscribe();
+  }, [user, isAdmin]);
 
   const compressImage = async (file: File): Promise<File> => {
     return new Promise((resolve) => {
@@ -183,7 +179,7 @@ export default function AdminPage() {
       }
       setUploadProgress(100);
       resetProductForm();
-      fetchProducts();
+      // No need to call fetchProducts - onSnapshot will update automatically
     } catch (error) {
       console.error('Error saving product:', error);
       alert('خطأ في حفظ المنتج');
@@ -197,7 +193,7 @@ export default function AdminPage() {
     if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
     try {
       await deleteDoc(doc(db, 'products', productId));
-      fetchProducts();
+      // No need to call fetchProducts - onSnapshot will update automatically
     } catch (error) {
       console.error('Error deleting product:', error);
     }
@@ -206,7 +202,7 @@ export default function AdminPage() {
   const handleUpdateOrderStatus = async (orderId: string, status: Order['status']) => {
     try {
       await updateDoc(doc(db, 'orders', orderId), { status });
-      fetchOrders();
+      // No need to call fetchOrders - onSnapshot will update automatically
     } catch (error) {
       console.error('Error updating order:', error);
     }
