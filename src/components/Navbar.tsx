@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { useCart } from '@/lib/cart';
 import { useCurrency } from '@/lib/currency';
-import { FiShoppingCart, FiLogIn, FiLogOut, FiLayout, FiUser } from 'react-icons/fi';
+import { FiShoppingCart, FiLogOut, FiLayout, FiUser, FiLogIn } from 'react-icons/fi';
 
 export default function Navbar() {
   const { user, signOut, isAdmin } = useAuth();

@@ -78,6 +78,54 @@ export default function AdminPage() {
     }
   };
 
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Resize if too large
+          const maxSize = 800;
+          if (width > height && width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          } else if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            'image/jpeg',
+            0.8
+          );
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSaveProduct = async () => {
     if (!productName.trim() || !productPrice.trim()) return;
 
@@ -88,11 +136,15 @@ export default function AdminPage() {
 
       if (productImageFile) {
         setUploadProgress(20);
-        const fileName = `products/${Date.now()}_${productImageFile.name}`;
+        
+        // Compress image before upload
+        const compressedFile = await compressImage(productImageFile);
+        
+        const fileName = `products/${Date.now()}_${compressedFile.name}`;
         const storageRef = ref(storage, fileName);
         
         setUploadProgress(30);
-        const uploadTask = uploadBytesResumable(storageRef, productImageFile);
+        const uploadTask = uploadBytesResumable(storageRef, compressedFile);
 
         await new Promise((resolve, reject) => {
           uploadTask.on(
