@@ -53,7 +53,7 @@ export default function AdminPage() {
   const fetchProducts = async () => {
     setLoadingProducts(true);
     try {
-      const productsQ = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(50));
+      const productsQ = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
       const productsSnap = await getDocs(productsQ);
       const productsData = productsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
       setProducts(productsData);
@@ -67,7 +67,7 @@ export default function AdminPage() {
   const fetchOrders = async () => {
     setLoadingOrders(true);
     try {
-      const ordersQ = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
+      const ordersQ = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
       const ordersSnap = await getDocs(ordersQ);
       const ordersData = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
       setOrders(ordersData);
@@ -83,24 +83,29 @@ export default function AdminPage() {
 
     try {
       setUploading(true);
-      setUploadProgress(0);
+      setUploadProgress(10);
       let imageUrl = editingProduct?.imageUrl || '';
 
       if (productImageFile) {
+        setUploadProgress(20);
         const fileName = `products/${Date.now()}_${productImageFile.name}`;
         const storageRef = ref(storage, fileName);
+        
+        setUploadProgress(30);
         const uploadTask = uploadBytesResumable(storageRef, productImageFile);
 
         await new Promise((resolve, reject) => {
           uploadTask.on(
             'state_changed',
             (snapshot) => {
-              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 70;
+              const progress = 30 + (snapshot.bytesTransferred / snapshot.totalBytes) * 50;
               setUploadProgress(progress);
             },
             (error) => reject(error),
             async () => {
+              setUploadProgress(85);
               imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+              setUploadProgress(90);
               resolve(true);
             }
           );
@@ -115,6 +120,7 @@ export default function AdminPage() {
         updatedAt: Date.now(),
       };
 
+      setUploadProgress(95);
       if (editingProduct) {
         await updateDoc(doc(db, 'products', editingProduct.id), productData);
       } else {
