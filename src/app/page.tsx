@@ -5,12 +5,14 @@ import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Product } from '@/types';
 import { useCart } from '@/lib/cart';
+import { useCurrency } from '@/lib/currency';
 import { FiShoppingCart, FiPackage } from 'react-icons/fi';
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     fetchProducts();
@@ -75,7 +77,7 @@ export default function HomePage() {
               </p>
               <div className="flex items-center justify-between">
                 <span className="text-xl font-bold text-purple-400">
-                  {product.price} ر.س
+                  {formatPrice(product.price)}
                 </span>
                 <button
                   onClick={() => addToCart(product)}

@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CartItem, Product } from '@/types';
+import { useAuth } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 interface CartContextType {
   items: CartItem[];
@@ -27,6 +29,8 @@ export const useCart = () => useContext(CartContext);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     const saved = localStorage.getItem('tuqim-cart');
@@ -44,6 +48,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   const addToCart = (product: Product) => {
+    // Check if user is logged in
+    if (!user) {
+      // Redirect to auth page
+      router.push('/auth');
+      return;
+    }
+    
     setItems(prev => {
       const existing = prev.find(item => item.product.id === product.id);
       if (existing) {

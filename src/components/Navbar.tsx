@@ -3,11 +3,13 @@
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { useCart } from '@/lib/cart';
+import { useCurrency } from '@/lib/currency';
 import { FiShoppingCart, FiLogIn, FiLogOut, FiLayout, FiUser } from 'react-icons/fi';
 
 export default function Navbar() {
-  const { user, signInWithGoogle, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const { itemCount } = useCart();
+  const { currency, toggleCurrency } = useCurrency();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#1a1a2e]/90 backdrop-blur-md border-b border-purple-900/30">
@@ -32,6 +34,16 @@ export default function Navbar() {
               </span>
             )}
           </Link>
+
+          <button
+            onClick={toggleCurrency}
+            className="p-2 rounded-lg hover:bg-purple-900/30 transition-all flex items-center gap-1 text-gray-400 hover:text-purple-400"
+            title="تبديل العملة"
+          >
+            <span className="text-sm font-bold">
+              {currency === 'SAR' ? 'ر.س' : '$'}
+            </span>
+          </button>
 
           {!isAdmin && (
             <Link
@@ -60,20 +72,24 @@ export default function Navbar() {
                 <span className="max-w-[120px] truncate">{isAdmin ? 'أدمن' : user.displayName}</span>
               </div>
               <button
-                onClick={signOut}
+                onClick={() => {
+                  if (confirm('هل تريد تسجيل الخروج؟')) {
+                    signOut();
+                  }
+                }}
                 className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-red-900/30 transition-colors text-red-400"
               >
                 <FiLogOut className="w-4 h-4" />
               </button>
             </div>
           ) : (
-            <button
-              onClick={signInWithGoogle}
+            <Link
+              href="/auth"
               className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors text-white text-sm"
             >
               <FiLogIn className="w-4 h-4" />
-              <span>تسجيل دخول</span>
-            </button>
+              <span>تسجيل دخول / إنشاء حساب</span>
+            </Link>
           )}
         </div>
       </div>

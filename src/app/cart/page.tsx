@@ -1,11 +1,13 @@
 'use client';
 
 import { useCart } from '@/lib/cart';
+import { useCurrency } from '@/lib/currency';
 import Link from 'next/link';
 import { FiTrash2, FiPlus, FiMinus, FiShoppingCart } from 'react-icons/fi';
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, total, itemCount } = useCart();
+  const { formatPrice } = useCurrency();
 
   if (items.length === 0) {
     return (
@@ -38,7 +40,7 @@ export default function CartPage() {
           >
             <div className="flex-1">
               <h3 className="font-bold text-lg">{item.product.name}</h3>
-              <p className="text-purple-400 font-bold">{item.product.price} ر.س</p>
+              <p className="text-purple-400 font-bold">{formatPrice(item.product.price)}</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -55,7 +57,7 @@ export default function CartPage() {
                 <FiPlus className="w-4 h-4" />
               </button>
               <span className="text-lg font-bold text-purple-400 mx-4">
-                {item.product.price * item.quantity} ر.س
+                {formatPrice(item.product.price * item.quantity)}
               </span>
               <button
                 onClick={() => removeFromCart(item.product.id)}
@@ -72,7 +74,7 @@ export default function CartPage() {
       <div className="bg-[#1a1a2e] rounded-xl border border-purple-900/30 p-6">
         <div className="flex justify-between items-center mb-6">
           <span className="text-xl text-gray-400">الإجمالي</span>
-          <span className="text-3xl font-bold text-purple-400">{total} ر.س</span>
+        <span className="text-3xl font-bold text-purple-400">{formatPrice(total)}</span>
         </div>
         <Link
           href="/checkout"

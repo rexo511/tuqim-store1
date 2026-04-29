@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useCart } from '@/lib/cart';
+import { useCurrency } from '@/lib/currency';
 import { useAuth } from '@/lib/auth';
 import { FiCheck, FiAlertCircle } from 'react-icons/fi';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
+  const { formatPrice } = useCurrency();
   const { user, signInWithGoogle } = useAuth();
   const router = useRouter();
   const [discordUsername, setDiscordUsername] = useState('');
@@ -101,15 +103,15 @@ export default function CheckoutPage() {
                 <h4 className="font-bold mb-2">المنتجات:</h4>
                 {items.map((item, i) => (
                   <div key={i} className="flex justify-between py-1 text-sm">
-                    <span>{item.product.name} × {item.quantity}</span>
-                    <span className="text-purple-400">{item.product.price * item.quantity} ر.س</span>
+                <span>{item.product.name} × {item.quantity}</span>
+                    <span className="text-purple-400">{formatPrice(item.product.price * item.quantity)}</span>
                   </div>
                 ))}
               </div>
 
               <div className="flex justify-between pt-4 border-t border-gray-700 mt-4">
                 <span className="text-lg font-bold">الإجمالي</span>
-                <span className="text-2xl font-bold text-purple-400">{total} ر.س</span>
+              <span className="text-2xl font-bold text-purple-400">{formatPrice(total)}</span>
               </div>
             </div>
           </div>
@@ -156,9 +158,9 @@ export default function CheckoutPage() {
             <div className="space-y-3">
               {items.map(item => (
                 <div key={item.product.id} className="flex justify-between">
-                  <span>{item.product.name} × {item.quantity}</span>
-                  <span className="text-purple-400">{item.product.price * item.quantity} ر.س</span>
-                </div>
+                    <span>{item.product.name} × {item.quantity}</span>
+                    <span className="text-purple-400">{formatPrice(item.product.price * item.quantity)}</span>
+                  </div>
               ))}
               <div className="flex justify-between pt-4 border-t border-gray-700 font-bold text-lg">
                 <span>الإجمالي</span>

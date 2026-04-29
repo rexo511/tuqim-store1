@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, addDoc, limit } from 'firebase/firestore';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth';
 import { Product, Order } from '@/types';
 import { FiPackage, FiDollarSign, FiShoppingBag, FiClock, FiPlus, FiEdit2, FiTrash2, FiCheck, FiX, FiLoader } from 'react-icons/fi';
@@ -14,7 +15,8 @@ export default function AdminPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [loadingOrders, setLoadingOrders] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders'>('dashboard');
 
   // Product form
@@ -23,9 +25,10 @@ export default function AdminPage() {
   const [productName, setProductName] = useState('');
   const [productPrice, setProductPrice] = useState('');
   const [productDesc, setProductDesc] = useState('');
-  const [productImage, setProductImage] = useState<File | null>(null);
-  const [productImageUrl, setProductImageUrl] = useState('');
+  const [productImageFile, setProductImageFile] = useState<File | null>(null);
+  const [productImagePreview, setProductImagePreview] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -33,27 +36,45 @@ export default function AdminPage() {
     }
   }, [user, isAdmin, authLoading, router]);
 
+  // Fetch products
   useEffect(() => {
     if (user && isAdmin) {
-      fetchData();
+      fetchProducts();
     }
   }, [user, isAdmin]);
 
-  const fetchData = async () => {
+  // Fetch orders
+  useEffect(() => {
+    if (user && isAdmin) {
+      fetchOrders();
+    }
+  }, [user, isAdmin]);
+
+  const fetchProducts = async () => {
+    setLoadingProducts(true);
     try {
-      const productsQ = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+      const productsQ = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(50));
       const productsSnap = await getDocs(productsQ);
       const productsData = productsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
       setProducts(productsData);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
 
-      const ordersQ = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+  const fetchOrders = async () => {
+    setLoadingOrders(true);
+    try {
+      const ordersQ = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
       const ordersSnap = await getDocs(ordersQ);
       const ordersData = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
       setOrders(ordersData);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching orders:', error);
     } finally {
-      setLoading(false);
+      setLoadingOrders(false);
     }
   };
 
@@ -61,37 +82,56 @@ export default function AdminPage() {
     if (!productName.trim() || !productPrice.trim()) return;
 
     try {
-      let imageUrl = productImageUrl;
+      setUploading(true);
+      setUploadProgress(0);
+      let imageUrl = editingProduct?.imageUrl || '';
 
-      if (productImage) {
-        setUploading(true);
-        const imageRef = ref(storage, `products/${Date.now()}_${productImage.name}`);
-        await uploadBytes(imageRef, productImage);
-        imageUrl = await getDownloadURL(imageRef);
-        setUploading(false);
+      if (productImageFile) {
+        const fileName = `products/${Date.now()}_${productImageFile.name}`;
+        const storageRef = ref(storage, fileName);
+        const uploadTask = uploadBytesResumable(storageRef, productImageFile);
+
+        await new Promise((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 70;
+              setUploadProgress(progress);
+            },
+            (error) => reject(error),
+            async () => {
+              imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(true);
+            }
+          );
+        });
       }
 
+      const productData = {
+        name: productName.trim(),
+        price: parseFloat(productPrice),
+        description: productDesc.trim(),
+        imageUrl,
+        updatedAt: Date.now(),
+      };
+
       if (editingProduct) {
-        await updateDoc(doc(db, 'products', editingProduct.id), {
-          name: productName.trim(),
-          price: parseFloat(productPrice),
-          description: productDesc.trim(),
-          imageUrl,
-        });
+        await updateDoc(doc(db, 'products', editingProduct.id), productData);
       } else {
         await addDoc(collection(db, 'products'), {
-          name: productName.trim(),
-          price: parseFloat(productPrice),
-          description: productDesc.trim(),
-          imageUrl,
+          ...productData,
           createdAt: Date.now(),
         });
       }
+      setUploadProgress(100);
       resetProductForm();
-      fetchData();
+      fetchProducts();
     } catch (error) {
       console.error('Error saving product:', error);
+      alert('خطأ في حفظ المنتج');
+    } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -99,7 +139,7 @@ export default function AdminPage() {
     if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
     try {
       await deleteDoc(doc(db, 'products', productId));
-      fetchData();
+      fetchProducts();
     } catch (error) {
       console.error('Error deleting product:', error);
     }
@@ -108,7 +148,7 @@ export default function AdminPage() {
   const handleUpdateOrderStatus = async (orderId: string, status: Order['status']) => {
     try {
       await updateDoc(doc(db, 'orders', orderId), { status });
-      fetchData();
+      fetchOrders();
     } catch (error) {
       console.error('Error updating order:', error);
     }
@@ -120,9 +160,10 @@ export default function AdminPage() {
     setProductName('');
     setProductPrice('');
     setProductDesc('');
-    setProductImage(null);
-    setProductImageUrl('');
+    setProductImageFile(null);
+    setProductImagePreview('');
     setUploading(false);
+    setUploadProgress(0);
   };
 
   const startEditProduct = (product: Product) => {
@@ -130,12 +171,14 @@ export default function AdminPage() {
     setProductName(product.name);
     setProductPrice(product.price.toString());
     setProductDesc(product.description);
-    setProductImageUrl(product.imageUrl || '');
-    setProductImage(null);
+    setProductImageFile(null);
+    setProductImagePreview(product.imageUrl || '');
     setShowProductForm(true);
   };
 
-  if (authLoading || loading) {
+  const isLoadingTab = (activeTab === 'products' && loadingProducts) || (activeTab === 'orders' && loadingOrders);
+
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full"></div>
@@ -292,9 +335,9 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">صورة المنتج</label>
-                    {productImageUrl && !productImage && (
+                    {productImagePreview && (
                       <div className="mb-2 w-full h-32 rounded-lg overflow-hidden bg-purple-900/20">
-                        <img src={productImageUrl} alt="preview" className="w-full h-full object-cover" />
+                        <img src={productImagePreview} alt="preview" className="w-full h-full object-cover" />
                       </div>
                     )}
                     <input
@@ -302,10 +345,10 @@ export default function AdminPage() {
                       accept="image/*"
                       onChange={e => {
                         const file = e.target.files?.[0] || null;
-                        setProductImage(file);
                         if (file) {
+                          setProductImageFile(file);
                           const reader = new FileReader();
-                          reader.onload = (ev) => setProductImageUrl(ev.target?.result as string);
+                          reader.onload = (ev) => setProductImagePreview(ev.target?.result as string);
                           reader.readAsDataURL(file);
                         }
                       }}
@@ -317,7 +360,7 @@ export default function AdminPage() {
                       onClick={handleSaveProduct}
                       className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors text-white"
                     >
-                      {uploading ? 'جاري رفع الصورة...' : editingProduct ? 'حفظ التعديلات' : 'إضافة المنتج'}
+                      {uploading ? `جاري الرفع... ${uploadProgress.toFixed(0)}%` : editingProduct ? 'حفظ التعديلات' : 'إضافة المنتج'}
                     </button>
                     <button
                       onClick={resetProductForm}

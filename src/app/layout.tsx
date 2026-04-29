@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth';
 import { CartProvider } from '@/lib/cart';
+import { CurrencyProvider } from '@/lib/currency';
 import Navbar from '@/components/Navbar';
+import WelcomeScreen from '@/components/WelcomeScreen';
 
 export const metadata: Metadata = {
   title: 'Tuqim Store - متجر رقمي',
@@ -19,10 +21,13 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <CartProvider>
-            <Navbar />
-            <main className="min-h-screen pt-16">
-              {children}
-            </main>
+            <CurrencyProvider>
+              <WelcomeScreen />
+              <Navbar />
+              <main className="min-h-screen pt-16">
+                {children}
+              </main>
+            </CurrencyProvider>
           </CartProvider>
         </AuthProvider>
       </body>

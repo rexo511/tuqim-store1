@@ -12,6 +12,15 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
 };
 
+// Log config for debugging (remove in production)
+if (typeof window !== 'undefined') {
+  console.log('Firebase Config:', {
+    apiKey: firebaseConfig.apiKey ? '✓ Set' : '✗ Missing',
+    authDomain: firebaseConfig.authDomain || '✗ Missing',
+    projectId: firebaseConfig.projectId || '✗ Missing',
+  });
+}
+
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const auth = getAuth(app);
 const db = getFirestore(app);
